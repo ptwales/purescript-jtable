@@ -2,7 +2,7 @@ module Test.Data.Json.JTable where
 
 import Prelude
 
-import Control.Monad.Eff (Eff)
+import Effect (Effect)
 
 import Data.Argonaut.Core (Json, JArray)
 import Data.Argonaut.JCursor (primToJson, primNull)
@@ -20,7 +20,6 @@ import Halogen.HTML.Properties as P
 import Halogen.VDom as VD
 import Halogen.VDom.DOM.Prop as VDP
 
-import Test.Data.Json.TestEffects (TestEffects)
 import Test.StrongCheck (assert, (<?>))
 
 jNull ∷ Json
@@ -241,7 +240,7 @@ insertedCase =
   }
 
 
-assertion ∷ ∀ e. TestCase → Eff (TestEffects e) Unit
+assertion ∷ TestCase → Effect Unit
 assertion {json: json, msg: msg, html: html} = do
   let expected = render html
       actual = render $ renderJTableDef json
@@ -249,7 +248,7 @@ assertion {json: json, msg: msg, html: html} = do
   assert ((actual == expected) <?> errorMsg)
 
 
-headerCellAssertion ∷ ∀ e. TestCase → Eff (TestEffects e) Unit
+headerCellAssertion ∷ TestCase → Effect Unit
 headerCellAssertion {json: json, msg: msg, html: html} = do
   let expected = render html
       opts = jTableOptsDefault {insertHeaderCells = true}
@@ -294,7 +293,7 @@ render = printVDom <<< unwrap
 
 foreign import propValueToString ∷ VDP.PropValue → String
 
-main ∷ ∀ eff. Eff (TestEffects eff) Unit
+main ∷ Effect Unit
 main = do
   for_ cases assertion
   headerCellAssertion insertedCase
