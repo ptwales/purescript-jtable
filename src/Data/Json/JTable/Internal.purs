@@ -22,9 +22,9 @@ import Data.List (List, (!!))
 import Data.List as L
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Monoid (mempty)
-import Data.StrMap as M
 import Data.Traversable (for)
 import Data.Tuple (Tuple(..), snd)
+import Foreign.Object as FO
 
 import Halogen.HTML as H
 
@@ -226,7 +226,7 @@ treeFromJson maxTupleSize label path = foldJsonPrim (const prim) array obj
 
     obj ∷ JSON.JObject → Tree
     obj jo =
-      if M.isEmpty jo
+      if FO.isEmpty jo
       then Tree tree
       else Tree $ tree { width = width, height = height, children = children }
 
@@ -236,7 +236,7 @@ treeFromJson maxTupleSize label path = foldJsonPrim (const prim) array obj
           treeFromJson maxTupleSize l (L.snoc path l) j
 
         children ∷ List Tree
-        children = assocToTree <$> M.toUnfoldable jo
+        children = assocToTree <$> FO.toUnfoldable jo
 
         width ∷ Int
         width = foldl (+) 0 $ (runTree >>> _.width) <$> children
@@ -342,13 +342,13 @@ mkTable maxTupleSize (Tree t) c = foldJsonPrim prim array obj
 
     obj ∷ JSON.JObject → Table
     obj jo =
-      if M.isEmpty jo
+      if FO.isEmpty jo
       then L.singleton $ L.singleton $ Cell { cursor: c, width: t.width, height: 1, json: JC.primNull }
       else mergeTableTuples $ labeledTable <$> t.children
       where
         labeledTable ∷ Tree → Tuple Int Table
         labeledTable (Tree tree) =
-          let j = fromMaybe (JC.primToJson JC.primNull) $ M.lookup tree.label jo in
+          let j = fromMaybe (JC.primToJson JC.primNull) $ FO.lookup tree.label jo in
           Tuple tree.width $ mkTable maxTupleSize (Tree tree) (JC.downField tree.label c) j
 
 mergeObjTuple ∷ Int → Tree → JC.JCursor → JSON.JArray → Maybe Table
@@ -357,7 +357,7 @@ mergeObjTuple maxTupleSize (Tree t) c ja = do
   jos ← for ja JSON.toObject
   let
     kss ∷ Array (Array String)
-    kss = M.keys <$> jos
+    kss = FO.keys <$> jos
     ks ∷ Array String
     ks = A.concat kss
 
@@ -368,7 +368,7 @@ mergeObjTuple maxTupleSize (Tree t) c ja = do
     mkTableTuple (Tree tree) = do
       i ← A.findIndex (elem tree.label) kss
       obj ← jos A.!! i
-      let j = fromMaybe (JC.primToJson JC.primNull) $ M.lookup tree.label obj
+      let j = fromMaybe (JC.primToJson JC.primNull) $ FO.lookup tree.label obj
       pure $ Tuple tree.width $ mkTable maxTupleSize (Tree tree) (JC.downField tree.label $ JC.downIndex i c) j
 
   pure $ mergeTableTuples $ L.catMaybes $ mkTableTuple <$> t.children
